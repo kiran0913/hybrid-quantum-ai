@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Hybrid Quantum-AI Anomaly Detector</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <div>
+          <h1>Hybrid Quantum-AI Anomaly Detector</h1>
+          <p class="muted">
+            Realistic upgrades: metrics (Precision/Recall/F1), confusion matrix, threshold sweep, demo dataset download.
+          </p>
+          <div id="statusBanner" class="status status-not">Status: NOT TRAINED</div>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="cardHeader">
+          <div>
+            <h2>Demo Dataset</h2>
+            <p class="muted small">Download realistic CSV. “Hard” is harder to separate than “Easy”.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="dlHardBtn" class="secondary">Download HARD CSV</button>
+            <button id="dlEasyBtn" class="secondary">Download EASY CSV</button>
+          </div>
+        </div>
+        <pre id="dlOut" class="output"></pre>
+      </section>
+
+      <section class="card">
+        <div class="cardHeader">
+          <div>
+            <h2>Training Curve</h2>
+            <p class="muted small">Loss (left axis) + Accuracy (right axis)</p>
+          </div>
+          <button id="saveChartBtn" class="secondary" disabled>Save training chart PNG</button>
+        </div>
+        <div class="chartWrap">
+          <canvas id="trainingChart"></canvas>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardHeader">
+          <div>
+            <h2>Evaluation (Test Split)</h2>
+            <p class="muted small">Accuracy is not enough. Use Precision/Recall/F1 + confusion matrix.</p>
+          </div>
+          <button id="applyBestThresholdBtn" class="secondary" disabled>Apply best threshold</button>
+        </div>
+
+        <div class="row two">
+          <div>
+            <h3 style="margin: 0 0 8px 0; font-size: 14px; color: rgba(234,240,255,0.85)">Confusion Matrix</h3>
+            <div class="cmGrid">
+              <div class="cmCell cmHdr"></div>
+              <div class="cmCell cmHdr">Pred 0</div>
+              <div class="cmCell cmHdr">Pred 1</div>
+              <div class="cmCell cmHdr">True 0</div>
+              <div class="cmCell" id="cmTN">—</div>
+              <div class="cmCell" id="cmFP">—</div>
+              <div class="cmCell cmHdr">True 1</div>
+              <div class="cmCell" id="cmFN">—</div>
+              <div class="cmCell" id="cmTP">—</div>
+            </div>
+            <p class="muted small" id="prevalenceLabel">Test prevalence: —</p>
+          </div>
+
+          <div>
+            <h3 style="margin: 0 0 8px 0; font-size: 14px; color: rgba(234,240,255,0.85)">Metrics</h3>
+            <pre id="evalOut" class="output"></pre>
+          </div>
+        </div>
+
+        <div class="cardHeader" style="margin-top:10px;">
+          <div>
+            <h2>Threshold Sweep</h2>
+            <p class="muted small">See tradeoffs. Best threshold is chosen by max F1.</p>
+          </div>
+          <button id="saveThreshChartBtn" class="secondary" disabled>Save sweep chart PNG</button>
+        </div>
+        <div class="chartWrap">
+          <canvas id="thresholdChart"></canvas>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardHeader">
+          <div>
+            <h2>Model</h2>
+            <p class="muted small">Save/Load keeps your trained model after Python restart.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="saveModelBtn" class="secondary">Save model</button>
+            <button id="loadModelBtn" class="secondary">Load model</button>
+          </div>
+        </div>
+        <pre id="modelOut" class="output"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Train (Upload CSV)</h2>
+        <p class="muted small">
+          Label col: <code>is_anomaly</code> (or your own label). Feature cols blank = all except label.
+        </p>
+
+        <div class="row">
+          <label>CSV File <input id="csvFile" type="file" accept=".csv,text/csv" /></label>
+          <label>Label Column (name/index/last) <input id="labelCol" type="text" value="is_anomaly" /></label>
+          <label>Feature Columns (blank = all except label) <input id="featureCols" type="text" placeholder="e.g. colA,colB" /></label>
+          <label>Test Ratio <input id="testRatio" type="number" value="0.2" step="0.05" min="0.05" max="0.5" /></label>
+        </div>
+
+        <div class="row">
+          <label>Epochs <input id="csvEpochs" type="number" value="250" min="1" max="500" /></label>
+          <label>LR <input id="csvLr" type="number" value="0.02" step="0.01" min="0.001" max="1" /></label>
+          <label>Seed <input id="csvSeed" type="number" value="42" min="0" max="10000" /></label>
+          <label>Eval Every (epochs) <input id="evalEvery" type="number" value="2" min="1" max="50" /></label>
+        </div>
+
+        <button id="trainCsvBtn">Train from CSV</button>
+        <pre id="trainCsvOut" class="output"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Predict</h2>
+        <p class="muted small">Anomaly if <code>score ≥ threshold</code>. Inputs auto-generated from model feature count.</p>
+
+        <div class="row two">
+          <label>
+            Threshold
+            <input id="thresholdRange" type="range" min="0" max="1" step="0.01" value="0.70" />
+          </label>
+          <label>
+            Threshold value
+            <input id="thresholdVal" type="number" min="0" max="1" step="0.01" value="0.70" />
+          </label>
+        </div>
+
+        <div id="predictInputs" class="row"></div>
+
+        <button id="predictBtn" disabled>Predict anomaly</button>
+        <pre id="predictOut" class="output"></pre>
+      </section>
+
+      <footer class="muted">
+        Node API: <code id="apiUrlLabel"></code>
+      </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
